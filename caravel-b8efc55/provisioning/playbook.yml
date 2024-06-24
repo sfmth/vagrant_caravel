@@ -1,0 +1,61 @@
+- name: System Setup
+  hosts: all
+  become: yes
+  tasks:
+    - name: install nala
+      shell: "apt update && apt install -y nala"
+    - name: update repositories
+      shell: "nala fetch -y --non-free --auto --fetches 8 && nala update"
+    - name: upgrade repositories
+      shell: "nala purge -y postfix && nala upgrade -y"
+    - name: Install essential packages
+      shell: "nala install -y build-essential linux-headers-amd64 htop vim tmux"
+    - name: Setting up ssh x11 forwarding
+      shell: | 
+        sed -i 's/[#]*X11UseLocalhost[ ]*[a-z]*/X11UseLocalhost no/' /etc/ssh/sshd_config 
+        sed -i 's/[#]*AllowAgentForwarding[ ]*[a-z]*/AllowAgentForwarding yes/' /etc/ssh/sshd_config
+        systemctl reload ssh && systemctl restart ssh
+    - name: reboot system
+      reboot:
+    # - name: Configuring nfs for shared folders
+    #   shell: |
+    #     sed -i 's/# udp=[ ]*[a-z]*/udp=y/' /etc/nfs.conf
+
+- name: Install and setup the tools
+  hosts: all
+  become: no
+  tasks:
+    - name: Install dependencies
+      shell: |
+        sudo nala install -y git python3-pip python3-yaml python3-venv gtkterm docker.io python3-click
+    - name: setup dependencies
+      shell: |
+        echo 'export PATH=$PATH:$HOME/.local/bin' >> $HOME/.bashrc
+        sudo adduser vagrant docker
+    # - name: Install Magic
+    #   shell: "sudo nala install -y tcsh csh tcl-dev tk-dev libcairo2-dev magic"
+    - name: Install Caravel User project
+      shell: |
+        mkdir -p /home/vagrant/tools/caravel/
+        cd /home/vagrant/tools/caravel/ && git clone https://github.com/efabless/caravel_user_project.git
+        cd /home/vagrant/tools/caravel/ && export PDK_ROOT=$(pwd)/pdk
+        cd /home/vagrant/tools/caravel/ && export OPENLANE_ROOT=$(pwd)/openlane
+        cd /home/vagrant/tools/caravel/caravel_user_project && git checkout b8efc55a816c11c27d0c363014c5213573b325c2
+        cd /home/vagrant/tools/caravel/caravel_user_project && make setup
+        cd /home/vagrant/tools/caravel/caravel_user_project && rm -rf caravel
+        cd /home/vagrant/tools/caravel/caravel_user_project && git clone https://github.com/efabless/caravel-lite caravel
+        cd /home/vagrant/tools/caravel/caravel_user_project/caravel && git checkout f7a4b5655bf857f157491e55202ac7619dec1831
+    - name: setup caravel environment variables
+      shell: |
+        echo 'install_dir=/home/vagrant/tools/caravel' >> $HOME/.bashrc
+        echo 'caravel_dir_name=caravel_user_project' >> $HOME/.bashrc
+        echo 'export PDK_ROOT=$install_dir/pdk' >> $HOME/.bashrc
+        echo 'export OPENLANE_ROOT=$install_dir/openlane' >> $HOME/.bashrc
+        echo 'export PDK=sky130A' >> $HOME/.bashrc
+        echo 'export MGMT_AREA_ROOT=$install_dir/$caravel_dir_name/mgmt_core_wrapper' >> $HOME/.bashrc
+        echo 'export DESIGNS=$install_dir/$caravel_dir_name' >> $HOME/.bashrc
+        echo 'export TARGET_PATH=$DESIGNS' >> $HOME/.bashrc
+        echo 'export CARAVEL_ROOT=$DESIGNS/caravel' >> $HOME/.bashrc
+        echo 'export MCW_ROOT=$DESIGNS/mgmt_core_wrapper' >> $HOME/.bashrc
+        echo 'export CORE_VERILOG_PATH=$MCW_ROOT/verilog' >> $HOME/.bashrc
+
