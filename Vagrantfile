@@ -13,8 +13,8 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "generic/debian12"
-  config.ssh.forward_agent = true
-  config.ssh.forward_x11 = true
+  # config.ssh.forward_agent = true
+  # config.ssh.forward_x11 = true
   
   config.vm.provision "ansible" do |ansible|
     # ansible.verbose = "vvv"
@@ -26,10 +26,10 @@ Vagrant.configure("2") do |config|
     v.cpus = 4
     v.memory = 4096
   end
-  config.vm.synced_folder "vagrant_home/", "/home/vagrant/tools",
-    type: "nfs",
-    nfs_version: 4,
-    nfs_udp: false
+  # config.vm.synced_folder "vagrant_home/", "/home/vagrant/tools",
+  #   type: "nfs",
+  #   nfs_version: 4,
+  #   nfs_udp: false
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
   # `vagrant box outdated`. This is not recommended.
